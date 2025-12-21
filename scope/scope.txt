@@ -1,0 +1,6 @@
+System will be used only inside police station.
+Only complainant/accused can speak.
+Police supervisor must be present.
+Initial language: Hindi to English.
+Report type: FIR only.
+AI acts as assistant, not decision-maker.

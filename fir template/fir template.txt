@@ -1,0 +1,11 @@
+FIR REPORT
+
+1. Complainant Name:
+2. Age:
+3. Address:
+4. Date & Time of Incident:
+5. Incident Location:
+6. Nature of Offense:
+7. Detailed Description:
+8. Witness Details (Optional):
+9. Suspect Details (Optional):
