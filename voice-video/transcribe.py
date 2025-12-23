@@ -1,76 +1,69 @@
-import subprocess
 import os
 import whisper
-from googletrans import Translator
+from gtts import gTTS
+from playsound import playsound
 
-VIDEO_FILE = "video.avi"
-AUDIO_FILE = "voice.wav"
-
-# -------------------------------
-# 1️⃣ CHECK VIDEO
-# -------------------------------
-if not os.path.exists(VIDEO_FILE):
-    raise FileNotFoundError("❌ video.avi not found")
-
-print("🎞️ Extracting clean audio from video...")
+AUDIO_FILE = "voice.wav"          # human voice
+AI_VOICE_FILE = "ai_hindi.mp3"    # AI generated Hindi voice
 
 # -------------------------------
-# 2️⃣ VIDEO → CLEAN AUDIO
+# 1️⃣ LOAD WHISPER
 # -------------------------------
-ffmpeg_cmd = [
-    "ffmpeg",
-    "-y",
-    "-i", VIDEO_FILE,
-    "-vn",
-    "-ac", "1",
-    "-ar", "16000",
-    "-af", "afftdn,volume=1.5",
-    AUDIO_FILE
-]
-
-subprocess.run(ffmpeg_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-if not os.path.exists(AUDIO_FILE):
-    raise RuntimeError("❌ Audio extraction failed")
-
-print("✅ Clean audio ready")
-
-# -------------------------------
-# 3️⃣ HINDI TRANSCRIPTION (NO TRANSLATE)
-# -------------------------------
-print("🧠 Loading Whisper (medium model)...")
+print("🧠 Loading Whisper (medium)...")
 model = whisper.load_model("medium")
 
-print("🎙️ Transcribing Hindi speech...")
+# -------------------------------
+# 2️⃣ HINDI TRANSCRIPTION
+# -------------------------------
+print("🎙️ Listening to human Hindi voice...")
+
 result_hi = model.transcribe(
     AUDIO_FILE,
     language="hi",
     task="transcribe",
     fp16=False,
-    temperature=0
+    temperature=0,
+    initial_prompt="यह एक पुलिस शिकायत है। स्पष्ट हिंदी में जानकारी दी जा रही है।"
 )
 
 hindi_text = result_hi["text"].strip()
 
-print("\n📄 HINDI TEXT:")
+print("\n📄 HINDI TEXT (Detected):")
 print(hindi_text)
 
-with open("hindi_text.txt", "w", encoding="utf-8") as f:
-    f.write(hindi_text)
+# -------------------------------
+# 3️⃣ HINDI → AI HINDI VOICE (TTS)
+# -------------------------------
+print("\n🔊 Generating AI Hindi Voice...")
+
+tts = gTTS(text=hindi_text, lang="hi")
+tts.save(AI_VOICE_FILE)
+
+print("▶️ Playing AI Hindi Voice...")
+playsound(AI_VOICE_FILE)
 
 # -------------------------------
-# 4️⃣ HINDI → ENGLISH TRANSLATION
+# 4️⃣ AI VOICE → ENGLISH TRANSLATION
 # -------------------------------
-print("\n🌍 Translating to English...")
-translator = Translator()
-eng = translator.translate(hindi_text, src="hi", dest="en")
+print("\n🌍 Translating AI Voice to English...")
 
-english_text = eng.text.strip()
+result_en = model.transcribe(
+    AI_VOICE_FILE,
+    language="hi",
+    task="translate",
+    fp16=False,
+    temperature=0
+)
 
-print("\n📄 ENGLISH TEXT:")
+english_text = result_en["text"].strip()
+
+print("\n📄 FINAL ENGLISH TEXT:")
 print(english_text)
 
+# -------------------------------
+# SAVE OUTPUT
+# -------------------------------
 with open("english_text.txt", "w", encoding="utf-8") as f:
     f.write(english_text)
 
-print("\n🎉 DONE — Accurate Translation Completed")
+print("\n🎉 DONE — AI Voice + Translation Pipeline Completed")
