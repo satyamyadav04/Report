@@ -6,20 +6,29 @@ from gtts import gTTS
 from playsound import playsound
 
 # ==================================================
-# FILES (IMPORTANT FIX: mp3, not wav)
+# FILES (UNCHANGED)
 # ==================================================
-AUDIO_FILE = "voice.wav"            # user input voice (already recorded)
-AI_VOICE_FILE = "ai_confirm.mp3"    # ✅ AI confirmation audio (MP3)
+AUDIO_FILE = "voice.wav"            # user input voice
+AI_VOICE_FILE = "ai_confirm.mp3"    # AI confirmation audio
 REPORT_FILE = "final_report.txt"
 
 # ==================================================
-# 1️⃣ LOAD WHISPER
+# 🔥 AUDIO EVIDENCE ID (NEW ADDITION)
+# ==================================================
+def generate_audio_evidence_id():
+    now = datetime.now()
+    return f"AE-{now.strftime('%Y%m%d-%H%M%S')}"
+
+AUDIO_EVIDENCE_ID = generate_audio_evidence_id()
+
+# ==================================================
+# 1️⃣ LOAD WHISPER (UNCHANGED)
 # ==================================================
 print("🧠 Loading Whisper (medium)...")
 model = whisper.load_model("medium")
 
 # ==================================================
-# 2️⃣ USER VOICE → TEXT (AUTO LANGUAGE)
+# 2️⃣ USER VOICE → TEXT (UNCHANGED)
 # ==================================================
 print("🎙️ Processing user voice...")
 
@@ -40,30 +49,28 @@ with open("original_text.txt", "w", encoding="utf-8") as f:
     f.write(original_text)
 
 # ==================================================
-# 3️⃣ AI CONFIRMATION AUDIO (SAME LANGUAGE AS INPUT)
+# 3️⃣ AI CONFIRMATION AUDIO (UNCHANGED LOGIC)
 # ==================================================
 print("\n🔊 Generating AI confirmation audio (same language)...")
 
-# safety fallback
 tts_language = input_language if input_language in ["hi", "en"] else "hi"
 
 tts = gTTS(
-    text=original_text,        # ✅ SAME language text
+    text=original_text,
     lang=tts_language,
     tld="co.in" if tts_language == "hi" else "com"
 )
-
 tts.save(AI_VOICE_FILE)
 
 print("▶️ Playing AI confirmation audio...")
 playsound(AI_VOICE_FILE)
 
 # ==================================================
-# 4️⃣ ALL FURTHER PROCESS FROM AI CONFIRMED AUDIO
+# 4️⃣ PROCESS FROM AI CONFIRMED AUDIO (UNCHANGED)
 # ==================================================
 print("\n🧠 Processing confirmed AI audio...")
 
-# ---------- Hindi ----------
+# Hindi
 result_hi = model.transcribe(
     AI_VOICE_FILE,
     task="translate",
@@ -75,7 +82,7 @@ hindi_text = result_hi["text"].strip()
 with open("hindi_text.txt", "w", encoding="utf-8") as f:
     f.write(hindi_text)
 
-# ---------- English ----------
+# English
 result_en = model.transcribe(
     AI_VOICE_FILE,
     task="translate",
@@ -88,7 +95,24 @@ with open("english_text.txt", "w", encoding="utf-8") as f:
     f.write(english_text)
 
 # ==================================================
-# 5️⃣ FIELD EXTRACTION (UNCHANGED LOGIC)
+# ✏️ REPORT EDIT FEATURE (NEW ADDITION)
+# ==================================================
+print("\n✏️ Kya aap Hindi complaint text edit karna chahte ho?")
+edit_choice = input("Type 'yes' to edit, anything else to continue: ").strip().lower()
+
+if edit_choice == "yes":
+    print("\n📝 Current Hindi Text:")
+    print(hindi_text)
+
+    print("\n✏️ Apna corrected Hindi text likho:")
+    user_edit = input(">> ").strip()
+
+    if user_edit:
+        hindi_text = user_edit
+        print("✅ Hindi text updated by user.")
+
+# ==================================================
+# 5️⃣ FIELD EXTRACTION (UNCHANGED)
 # ==================================================
 def extract_report_fields(hindi_text):
     fields = {}
@@ -132,7 +156,7 @@ def extract_report_fields(hindi_text):
 fields = extract_report_fields(hindi_text)
 
 # ==================================================
-# 6️⃣ USER CHOICE FOR REPORT LANGUAGE
+# 6️⃣ USER CHOICE FOR REPORT LANGUAGE (UNCHANGED)
 # ==================================================
 print("\n📘 Report language choose kare:")
 print("👉 Hindi ke liye: hi")
@@ -141,7 +165,7 @@ print("👉 English ke liye: en")
 choice = input("Your choice (hi/en): ").strip().lower()
 
 # ==================================================
-# 7️⃣ REPORT SUMMARY
+# 7️⃣ REPORT SUMMARY (UNCHANGED)
 # ==================================================
 if choice == "hi":
     summary = (
@@ -158,16 +182,17 @@ else:
     )
 
 # ==================================================
-# 8️⃣ FINAL REPORT (BILINGUAL)
+# 8️⃣ FINAL REPORT (WITH AUDIO EVIDENCE ID)
 # ==================================================
 if choice == "hi":
     report = f"""
 ==================================================
             पुलिस शिकायत रिपोर्ट
 ==================================================
+ऑडियो साक्ष्य आईडी : {AUDIO_EVIDENCE_ID}
 इनपुट भाषा        : {input_language}
 AI पुष्टि ऑडियो     : उपयोग किया गया
-रिपोर्ट भाषा       : हिंदी
+स्थिति            : User‑Edited & Confirmed
 
 --------------------------------------------------
 1. रिपोर्ट सारांश
@@ -188,9 +213,10 @@ else:
 ==================================================
             POLICE COMPLAINT REPORT
 ==================================================
+Audio Evidence ID : {AUDIO_EVIDENCE_ID}
 Input Language    : {input_language}
 AI Confirmation  : Used
-Report Language  : English
+Status           : User‑Edited & Confirmed
 
 --------------------------------------------------
 1. REPORT SUMMARY
@@ -211,4 +237,4 @@ with open(REPORT_FILE, "w", encoding="utf-8") as f:
     f.write(report)
 
 print("\n📄 FINAL REPORT GENERATED → final_report.txt")
-print("🎉 DONE — AI CONFIRMATION + FULL PIPELINE WORKING")
+print("🎉 DONE — REPORT EDIT + AUDIO EVIDENCE ID ADDED")
