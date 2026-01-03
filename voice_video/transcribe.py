@@ -17,7 +17,7 @@ REPORT_FILE = "final_report.txt"
 # ==================================================
 def generate_audio_evidence_id():
     now = datetime.now()
-    return f"AE-{now.strftime('%Y%m%d-%H%M%S')}"
+    return f"AE-{now.strftime('%Y%m%d-%H%M%S')}" 
 
 AUDIO_EVIDENCE_ID = generate_audio_evidence_id()
 
@@ -70,17 +70,19 @@ playsound(AI_VOICE_FILE)
 # ==================================================
 print("\n🧠 Processing confirmed AI audio...")
 
-# Hindi
+# ================================
+# ✅ PURE HINDI TRANSCRIPTION
+# ================================
 result_hi = model.transcribe(
     AI_VOICE_FILE,
-    task="translate",
     language="hi",
     fp16=False
 )
-hindi_text = result_hi["text"].strip()
 
+hindi_text = result_hi["text"].strip()
 with open("hindi_text.txt", "w", encoding="utf-8") as f:
     f.write(hindi_text)
+
 
 # English
 result_en = model.transcribe(
