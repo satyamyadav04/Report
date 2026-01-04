@@ -85,28 +85,24 @@ if os.path.exists("english_text.txt"):
 # ===============================
 # DOWNLOAD SECTION
 # ===============================
-st.subheader("⬇️ Step 4: Download Reports")
+st.subheader("⬇️ Download FIR")
 
-col1, col2 = st.columns(2)
+if os.path.exists("final_report.txt"):
+    with open("final_report.txt", "r", encoding="utf-8") as f:
+        st.download_button(
+            "📄 Download FIR (TXT)",
+            data=f.read(),
+            file_name="FIR_Report.txt"
+        )
 
-with col1:
-    if os.path.exists("final_report.txt"):
-        with open("final_report.txt", "r", encoding="utf-8") as f:
-            st.download_button(
-                "📄 Download TXT Report",
-                data=f.read(),
-                file_name="FIR_Report.txt"
-            )
-
-with col2:
-    if os.path.exists("final_report.pdf"):
-        with open("final_report.pdf", "rb") as f:
-            st.download_button(
-                "📕 Download PDF FIR",
-                data=f,
-                file_name="FIR_Report.pdf",
-                mime="application/pdf"
-            )
+if os.path.exists("final_report.html"):
+    with open("final_report.html", "r", encoding="utf-8") as f:
+        st.download_button(
+            "📕 Download FIR (HTML → Save as PDF)",
+            data=f.read(),
+            file_name="FIR_Report.html",
+            mime="text/html"
+        )
 
 # ===============================
 # FOOTER
