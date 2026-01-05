@@ -6,9 +6,9 @@ from gtts import gTTS
 from playsound import playsound
 
 
-AUDIO_FILE = "voice.wav"            # user input voice
+# AUDIO_FILE = "voice.wav"            # user input voice
 AI_VOICE_FILE = "ai_confirm.mp3"    # AI confirmation audio
-REPORT_FILE = "final_report.txt"
+# REPORT_FILE = "final_report.txt"
 
 def generate_audio_evidence_id():
     now = datetime.now()
@@ -33,9 +33,9 @@ def generate_ai_confirmation(text, lang):
     tts.save(AI_VOICE_FILE)
     return AI_VOICE_FILE
 
-def confirmed_audio_to_text(audio_file):
-    hi = model.transcribe(audio_file, language="hi", fp16=False)["text"]
-    en = model.transcribe(audio_file, task="translate", language="en", fp16=False)["text"]
+def confirmed_audio_to_text(AUDIO_FILE):
+    hi = model.transcribe(AUDIO_FILE, language="hi", fp16=False)["text"]
+    en = model.transcribe(AUDIO_FILE, task="translate", language="en", fp16=False)["text"]
     
     return {
         "hindi": hi.strip(),
