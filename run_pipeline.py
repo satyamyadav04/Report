@@ -1,8 +1,6 @@
 import subprocess
 from voice_video.pdf_generator import generate_pdf
 
-
-
 # 1️⃣ Run existing pipeline
 subprocess.run(["python", "voice-video/transcribe.py"])
 

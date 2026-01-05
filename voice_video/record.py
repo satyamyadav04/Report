@@ -24,7 +24,8 @@ def record_audio():
 
 # ======================
 # VIDEO RECORDING
-# ====================== 
+# ======================
+ 
 def record_video():
     print("🎥 Video recording started...")
     cap = cv2.VideoCapture(0)

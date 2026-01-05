@@ -31,7 +31,6 @@ model = whisper.load_model("medium")
 # 2️⃣ USER VOICE → TEXT (UNCHANGED)
 # ==================================================
 print("🎙️ Processing user voice...")
-
 result = model.transcribe(
     AUDIO_FILE,
     fp16=False,
@@ -91,6 +90,7 @@ result_en = model.transcribe(
     language="en",
     fp16=False
 )
+
 english_text = result_en["text"].strip()
 
 with open("english_text.txt", "w", encoding="utf-8") as f:
