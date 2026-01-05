@@ -2,112 +2,104 @@ import streamlit as st
 import subprocess
 import os
 
-st.set_page_config(
-    page_title="AI Voice FIR System",
-    page_icon="🎙️",
-    layout="wide"
+st.set_page_config(page_title="AI FIR System", layout="wide")
+st.title("🎙️ AI Voice & Video FIR System")
+
+# ===============================
+# STEP 1: VIDEO UPLOAD
+# ===============================
+st.header("1️⃣ Upload Video (with Audio)")
+
+video_file = st.file_uploader(
+    "Upload recorded video (camera + mic)",
+    type=["mp4", "webm"]
 )
 
-st.title("🎙️ AI‑Based Voice FIR Generation System")
-st.markdown("Generate police complaint reports from voice input using AI")
+if video_file:
+    with open("temp/input_video.mp4", "wb") as f:
+        f.write(video_file.read())
+
+    st.video("temp/input_video.mp4")
+    st.success("Video uploaded successfully")
 
 # ===============================
-# SIDEBAR – OPTIONS
+# STEP 2: EXTRACT AUDIO
 # ===============================
-st.sidebar.header("⚙️ FIR Options")
+st.header("2️⃣ Extract Audio from Video")
 
-report_lang = st.sidebar.radio(
-    "Select Report Language",
-    ["Hindi", "English"]
-)
-
-allow_edit = st.sidebar.checkbox(
-    "Allow text editing before final report",
-    value=True
-)
-
-st.sidebar.markdown("---")
-st.sidebar.info("AI Confirmation Audio is always used")
+if st.button("🎧 Extract Audio"):
+    subprocess.run([
+        "ffmpeg", "-y",
+        "-i", "temp/input_video.mp4",
+        "-q:a", "0",
+        "-map", "a",
+        "temp/voice.wav"
+    ])
+    st.success("Audio extracted")
+    st.audio("temp/voice.wav")
 
 # ===============================
-# MAIN – VOICE INPUT
+# STEP 3: AI CONFIRMATION VOICE
 # ===============================
-st.subheader("🎧 Step 1: Upload Voice Input")
+st.header("3️⃣ AI Confirmation Voice")
 
-uploaded_file = st.file_uploader(
-    "Upload voice file (.wav)",
-    type=["wav"]
-)
+if st.button("🔊 Generate AI Voice"):
+    subprocess.run(["python", "voice_video/transcribe.py"])
+    st.success("AI confirmation voice generated")
 
-if uploaded_file:
-    with open("voice.wav", "wb") as f:
-        f.write(uploaded_file.read())
-
-    st.audio("voice.wav")
-    st.success("Voice file uploaded successfully")
+if os.path.exists("ai_confirm.mp3"):
+    st.audio("ai_confirm.mp3")
 
 # ===============================
-# GENERATE FIR BUTTON
+# STEP 4: REVIEW & EDIT TEXT
 # ===============================
-st.subheader("🚀 Step 2: Generate FIR")
-
-if st.button("▶️ Generate FIR from Voice"):
-    if not os.path.exists("voice.wav"):
-        st.error("Please upload a voice file first")
-    else:
-        with st.spinner("Processing voice and generating FIR..."):
-            subprocess.run(["python", "run_pipeline.py"])
-        st.success("FIR generated successfully")
-
-# ===============================
-# SHOW GENERATED CONTENT
-# ===============================
-st.subheader("📄 Step 3: Review Extracted Content")
+st.header("4️⃣ Review & Edit Text")
 
 if os.path.exists("hindi_text.txt"):
-    st.markdown("### 📝 Hindi Text")
     with open("hindi_text.txt", "r", encoding="utf-8") as f:
-        st.text_area(
-            "Hindi Complaint",
+        edited = st.text_area(
+            "Hindi Complaint (Editable)",
             f.read(),
-            height=200
+            height=250
         )
 
-if os.path.exists("english_text.txt"):
-    st.markdown("### 📝 English Text")
-    with open("english_text.txt", "r", encoding="utf-8") as f:
-        st.text_area(
-            "English Complaint",
-            f.read(),
-            height=200
-        )
+    if st.button("💾 Save Edited Text"):
+        with open("hindi_text.txt", "w", encoding="utf-8") as f:
+            f.write(edited)
+        st.success("Text updated")
 
 # ===============================
-# DOWNLOAD SECTION
+# STEP 5: FINAL REPORT OPTIONS
 # ===============================
-st.subheader("⬇️ Download FIR")
+st.header("5️⃣ Final Report Options")
 
-if os.path.exists("final_report.txt"):
+format_choice = st.radio(
+    "Choose final report format",
+    ["TXT", "HTML (Save as PDF)"]
+)
+
+if st.button("📄 Generate Final Report"):
+    subprocess.run(["python", "run_pipeline.py"])
+    st.success("Final report generated")
+
+# ===============================
+# STEP 6: DOWNLOAD
+# ===============================
+st.header("6️⃣ Download")
+
+if format_choice == "TXT" and os.path.exists("final_report.txt"):
     with open("final_report.txt", "r", encoding="utf-8") as f:
         st.download_button(
-            "📄 Download FIR (TXT)",
-            data=f.read(),
-            file_name="FIR_Report.txt"
+            "⬇️ Download TXT",
+            f.read(),
+            "FIR_Report.txt"
         )
 
-if os.path.exists("final_report.html"):
+if format_choice.startswith("HTML") and os.path.exists("final_report.html"):
     with open("final_report.html", "r", encoding="utf-8") as f:
         st.download_button(
-            "📕 Download FIR (HTML → Save as PDF)",
-            data=f.read(),
-            file_name="FIR_Report.html",
+            "⬇️ Download HTML (Print → PDF)",
+            f.read(),
+            "FIR_Report.html",
             mime="text/html"
         )
-
-# ===============================
-# FOOTER
-# ===============================
-st.markdown("---")
-st.caption(
-    "AI‑Based FIR System | Voice → Verification → Structured Report"
-)
