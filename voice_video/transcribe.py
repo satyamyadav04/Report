@@ -5,100 +5,44 @@ import whisper
 from gtts import gTTS
 from playsound import playsound
 
-# ==================================================
-# FILES (UNCHANGED)
-# ==================================================
+
 AUDIO_FILE = "voice.wav"            # user input voice
 AI_VOICE_FILE = "ai_confirm.mp3"    # AI confirmation audio
 REPORT_FILE = "final_report.txt"
 
-# ==================================================
-# 🔥 AUDIO EVIDENCE ID (NEW ADDITION)
-# ==================================================
 def generate_audio_evidence_id():
     now = datetime.now()
     return f"AE-{now.strftime('%Y%m%d-%H%M%S')}" 
 
 AUDIO_EVIDENCE_ID = generate_audio_evidence_id()
-
-# ==================================================
-# 1️⃣ LOAD WHISPER (UNCHANGED)
-# ==================================================
-print("🧠 Loading Whisper (medium)...")
 model = whisper.load_model("medium")
 
-# ==================================================
-# 2️⃣ USER VOICE → TEXT (UNCHANGED)
-# ==================================================
-print("🎙️ Processing user voice...")
-result = model.transcribe(
-    AUDIO_FILE,
-    fp16=False,
-    temperature=0
-)
+def transcribe_pipline(AUDIO_FILE):
+    result = model.transcibe(
+        AUDIO_FILE,
+        fp16=False,
+        temperature=0
+    )
+    input_language = result.get("language", "unknown")
+    original_text = result["text"].strip()
+    return original_text, input_language
 
-input_language = result.get("language", "unknown")
-original_text = result["text"].strip()
+def generate_ai_confirmation(text, lang):
+    tts_lang = lang if lang in ["hi", "en"] else "hi"
+    tts = gTTS(text=text, lang=tts_lang)
+    tts.save(AI_VOICE_FILE)
+    return AI_VOICE_FILE
 
-print("\n📄 ORIGINAL TEXT (User Language):")
-print(original_text)
-print(f"🌐 Detected Language: {input_language}")
-
-with open("original_text.txt", "w", encoding="utf-8") as f:
-    f.write(original_text)
-
-# ==================================================
-# 3️⃣ AI CONFIRMATION AUDIO (UNCHANGED LOGIC)
-# ==================================================
-print("\n🔊 Generating AI confirmation audio (same language)...")
-
-tts_language = input_language if input_language in ["hi", "en"] else "hi"
-
-tts = gTTS(
-    text=original_text,
-    lang=tts_language,
-    tld="co.in" if tts_language == "hi" else "com"
-)
-tts.save(AI_VOICE_FILE)
-
-print("▶️ Playing AI confirmation audio...")
-playsound(AI_VOICE_FILE)
-
-# ==================================================
-# 4️⃣ PROCESS FROM AI CONFIRMED AUDIO (UNCHANGED)
-# ==================================================
-print("\n🧠 Processing confirmed AI audio...")
-
-# ================================
-# ✅ PURE HINDI TRANSCRIPTION
-# ================================
-result_hi = model.transcribe(
-    AI_VOICE_FILE,
-    language="hi",
-    fp16=False
-)
-
-hindi_text = result_hi["text"].strip()
-with open("hindi_text.txt", "w", encoding="utf-8") as f:
-    f.write(hindi_text)
+def confirmed_audio_to_text(audio_file):
+    hi = model.transcribe(audio_file, language="hi", fp16=False)["text"]
+    en = model.transcribe(audio_file, task="translate", language="en", fp16=False)["text"]
+    
+    return {
+        "hindi": hi.strip(),
+        "english": en.strip()
+    }
 
 
-# English
-result_en = model.transcribe(
-    AI_VOICE_FILE,
-    task="translate",
-    language="en",
-    fp16=False
-)
-
-english_text = result_en["text"].strip()
-
-with open("english_text.txt", "w", encoding="utf-8") as f:
-    f.write(english_text)
-
-# ==================================================
-# ✏️ REPORT EDIT FEATURE (NEW ADDITION)
-# ==================================================
 print("\n✏️ Kya aap Hindi complaint text edit karna chahte ho?")
 edit_choice = input("Type 'yes' to edit, anything else to continue: ").strip().lower()
 
