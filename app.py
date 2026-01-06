@@ -1,116 +1,109 @@
+import streamlit as st
+import os
+from voice_video.transcribe import transcribe_pipline, confirmed_audio_to_text
+from run_pipeline import run_pipeline, generate_fir_report
 
 
 
-# import streamlit as st
-# import subprocess
-# import os
+st.set_page_config(page_title="AI FIR System", layout="wide")
+st.title("🎙️ AI Voice-Based FIR System (Web Mode)")
 
-# st.set_page_config(
-#     page_title="AI Voice FIR System",
-#     page_icon="🎙️",
-#     layout="wide"
-# )
+# ---------------------------
+# Upload Section
+# ---------------------------
+st.header("Step 1️⃣ Upload FIR Audio")
 
-# st.title("🎙️ AI‑Based Voice FIR Generation System")
-# st.markdown("Generate police complaint reports from voice input using AI")
+uploaded_audio = st.file_uploader(
+    "Upload FIR Audio File",
+    type=["wav", "mp3"]
+)
 
-# # ===============================
-# # SIDEBAR – OPTIONS
-# # ===============================
-# st.sidebar.header("⚙️ FIR Options")
+if uploaded_audio:
+    with open("voice.wav", "wb") as f:
+        f.write(uploaded_audio.read())
 
-# report_lang = st.sidebar.radio(
-#     "Select Report Language",
-#     ["Hindi", "English"]
-# )
+    st.audio("voice.wav")
 
-# allow_edit = st.sidebar.checkbox(
-#     "Allow text editing before final report",
-#     value=True
-# )
+# ---------------------------
+# Transcription
+# ---------------------------
+if uploaded_audio and st.button("▶️ Start Transcription"):
+    with st.spinner("Processing audio..."):
+        original_text, lang = transcribe_pipline("voice.wav")
+        texts = confirmed_audio_to_text("voice.wav")
 
-# st.sidebar.markdown("---")
-# st.sidebar.info("AI Confirmation Audio is always used")
+    st.session_state["hindi"] = texts["hindi"]
+    st.session_state["english"] = texts["english"]
+    st.success("✅ Transcription completed")
 
-# # ===============================
-# # MAIN – VOICE INPUT
-# # ===============================
-# st.subheader("🎧 Step 1: Upload Voice Input")
+# ---------------------------
+# Language Edit
+# ---------------------------
+if "hindi" in st.session_state:
+    st.header("Step 2️⃣ Edit FIR")
 
-# uploaded_file = st.file_uploader(
-#     "Upload voice file (.wav)",
-#     type=["wav"]
-# )
+    language = st.radio("Choose language", ["Hindi", "English"])
 
-# if uploaded_file:
-#     with open("voice.wav", "wb") as f:
-#         f.write(uploaded_file.read())
+    text_map = {
+        "Hindi": st.session_state["hindi"],
+        "English": st.session_state["english"]
+    }
 
-#     st.audio("voice.wav")
-#     st.success("Voice file uploaded successfully")
+    edited_text = st.text_area(
+        f"Edit {language} FIR",
+        value=text_map[language],
+        height=300
+    )
 
-# # ===============================
-# # GENERATE FIR BUTTON
-# # ===============================
-# st.subheader("🚀 Step 2: Generate FIR")
+    if st.button("💾 Save Edited FIR"):
+        filename = "hindi_text.txt" if language == "Hindi" else "english_text.txt"
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(edited_text)
+        st.session_state["final_text"] = edited_text
+        st.session_state["selected_language"] = "hi" if language == "Hindi" else "en"
 
-# if st.button("▶️ Generate FIR from Voice"):
-#     if not os.path.exists("voice.wav"):
-#         st.error("Please upload a voice file first")
-#     else:
-#         with st.spinner("Processing voice and generating FIR..."):
-#             subprocess.run(["python", "run_pipeline.py"])
-#         st.success("FIR generated successfully")
+        st.success("✅ FIR saved successfully")
 
-# # ===============================
-# # SHOW GENERATED CONTENT
-# # ===============================
-# st.subheader("📄 Step 3: Review Extracted Content")
+# ---------------------------
+# field extraction and report generation
+# ---------------------------
+# st.header("Step 3️⃣ Generate Final Report")
+if st.button("📄 Generate Report"):
+    result = run_pipeline(
+        audio_file="voice.wav",
+        final_text=st.session_state["final_text"],
+        language=st.session_state["selected_language"]
+    )
+    st.session_state["extracted_fields"] = result["extracted_fields"]
+    st.subheader("📌 Extracted Fields")
+    st.json(result["extracted_fields"])
 
-# if os.path.exists("hindi_text.txt"):
-#     st.markdown("### 📝 Hindi Text")
-#     with open("hindi_text.txt", "r", encoding="utf-8") as f:
-#         st.text_area(
-#             "Hindi Complaint",
-#             f.read(),
-#             height=200
-#         )
 
-# if os.path.exists("english_text.txt"):
-#     st.markdown("### 📝 English Text")
-#     with open("english_text.txt", "r", encoding="utf-8") as f:
-#         st.text_area(
-#             "English Complaint",
-#             f.read(),
-#             height=200
-#         )
+st.subheader("📘 Choose Report Language")
+report_language = st.radio(
+    "Report Language",
+    options=["hi", "en"],
+    format_func=lambda x: "Hindi" if x == "hi" else "English"
+)
 
-# # ===============================
-# # DOWNLOAD SECTION
-# # ===============================
-# st.subheader("⬇️ Download FIR")
+if st.button("📄 Generate Final FIR Report"):
+    final_report = generate_fir_report(
+        fields=st.session_state["extracted_fields"],
+        hindi_text=st.session_state["hindi"],
+        english_text=st.session_state["english"],
+        report_language=report_language,
+        # audio_evidence_id=st.session_state["audio_evidence_id"],
+        input_language=st.session_state["input_language"]
+    )
 
-# if os.path.exists("final_report.txt"):
-#     with open("final_report.txt", "r", encoding="utf-8") as f:
-#         st.download_button(
-#             "📄 Download FIR (TXT)",
-#             data=f.read(),
-#             file_name="FIR_Report.txt"
-#         )
+    st.subheader("📄 Final Report Preview")
+    st.text(final_report)
 
-# if os.path.exists("final_report.html"):
-#     with open("final_report.html", "r", encoding="utf-8") as f:
-#         st.download_button(
-#             "📕 Download FIR (HTML → Save as PDF)",
-#             data=f.read(),
-#             file_name="FIR_Report.html",
-#             mime="text/html"
-#         )
+    st.download_button(
+        "⬇️ Download Report",
+        final_report,
+        file_name="final_report.txt"
+    )
 
-# # ===============================
-# # FOOTER
-# # ===============================
-# st.markdown("---")
-# st.caption(
-#     "AI‑Based FIR System | Voice → Verification → Structured Report"
-# )
+st.markdown("---")
+st.markdown("Developed by AI FIR System Team")

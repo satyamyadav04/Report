@@ -4,6 +4,7 @@ from datetime import datetime
 import whisper
 from gtts import gTTS
 from playsound import playsound
+from model import get_model
 
 
 # AUDIO_FILE = "voice.wav"            # user input voice
@@ -15,10 +16,11 @@ def generate_audio_evidence_id():
     return f"AE-{now.strftime('%Y%m%d-%H%M%S')}" 
 
 AUDIO_EVIDENCE_ID = generate_audio_evidence_id()
-model = whisper.load_model("medium")
+
+model = get_model()
 
 def transcribe_pipline(AUDIO_FILE):
-    result = model.transcibe(
+    result = model.transcribe(
         AUDIO_FILE,
         fp16=False,
         temperature=0
@@ -43,144 +45,86 @@ def confirmed_audio_to_text(AUDIO_FILE):
     }
 
 
-print("\n✏️ Kya aap Hindi complaint text edit karna chahte ho?")
-edit_choice = input("Type 'yes' to edit, anything else to continue: ").strip().lower()
+# # ==================================================
+# # 6️⃣ USER CHOICE FOR REPORT LANGUAGE (UNCHANGED)
+# # ==================================================
+# print("\n📘 Report language choose kare:")
+# print("👉 Hindi ke liye: hi")
+# print("👉 English ke liye: en")
 
-if edit_choice == "yes":
-    print("\n📝 Current Hindi Text:")
-    print(hindi_text)
+# choice = input("Your choice (hi/en): ").strip().lower()
 
-    print("\n✏️ Apna corrected Hindi text likho:")
-    user_edit = input(">> ").strip()
+# # ==================================================
+# # 7️⃣ REPORT SUMMARY (UNCHANGED)
+# # ==================================================
+# if choice == "hi":
+#     summary = (
+#         f"यह रिपोर्ट {fields['DATE']} को {fields['TIME']} बजे दर्ज की गई है। "
+#         f"शिकायतकर्ता {fields['NAME']} द्वारा "
+#         f"{fields['INCIDENT_PLACE']} क्षेत्र में "
+#         f"{fields['COMPLAINT_TYPE']} से संबंधित शिकायत दर्ज की गई है।"
+#     )
+# else:
+#     summary = (
+#         f"This report was generated on {fields['DATE']} at {fields['TIME']}. "
+#         f"The complainant {fields['NAME']} reported a "
+#         f"{fields['COMPLAINT_TYPE']} near {fields['INCIDENT_PLACE']}."
+#     )
 
-    if user_edit:
-        hindi_text = user_edit
-        print("✅ Hindi text updated by user.")
-
+# # ==================================================
+# # 8️⃣ FINAL REPORT (WITH AUDIO EVIDENCE ID)
+# # ==================================================
+# if choice == "hi":
+#     report = f"""
 # ==================================================
-# 5️⃣ FIELD EXTRACTION (UNCHANGED)
+#             पुलिस शिकायत रिपोर्ट
 # ==================================================
-def extract_report_fields(hindi_text):
-    fields = {}
+# ऑडियो साक्ष्य आईडी : {AUDIO_EVIDENCE_ID}
+# इनपुट भाषा        : {input_language}
+# AI पुष्टि ऑडियो     : उपयोग किया गया
+# स्थिति            : User‑Edited & Confirmed
 
-    name_patterns = [
-        r"मेरा नाम ([^,।]+)",
-        r"नाम ([^,।]+)"
-    ]
+# --------------------------------------------------
+# 1. रिपोर्ट सारांश
+# --------------------------------------------------
+# {summary}
 
-    fields["NAME"] = "Not Mentioned"
-    for p in name_patterns:
-        m = re.search(p, hindi_text)
-        if m:
-            fields["NAME"] = m.group(1).strip()
-            break
+# --------------------------------------------------
+# 2. शिकायत विवरण (हिंदी)
+# --------------------------------------------------
+# {hindi_text}
 
-    city_match = re.search(r"(दिल्ली|मुंबई|लखनऊ|पटना|कानपुर)", hindi_text)
-    fields["PLACE"] = city_match.group(1) if city_match else "Not Mentioned"
-
-    place_patterns = [
-        "रेलवे स्टेशन", "बस स्टैंड", "मेट्रो स्टेशन",
-        "बाज़ार", "मार्केट", "पार्क", "मॉल", "थाना"
-    ]
-
-    fields["INCIDENT_PLACE"] = "Not Mentioned"
-    for p in place_patterns:
-        if p in hindi_text:
-            fields["INCIDENT_PLACE"] = p
-            break
-
-    fields["COMPLAINT_TYPE"] = (
-        "Mobile Theft Complaint" if "चोरी" in hindi_text else "General Complaint"
-    )
-
-    now = datetime.now()
-    fields["DATE"] = now.strftime("%d-%m-%Y")
-    fields["TIME"] = now.strftime("%H:%M")
-
-    return fields
-
-fields = extract_report_fields(hindi_text)
-
+# --------------------------------------------------
+# तैयार किया गया : Voice-Based FIR System
+# --------------------------------------------------
+# """
+# else:
+#     report = f"""
 # ==================================================
-# 6️⃣ USER CHOICE FOR REPORT LANGUAGE (UNCHANGED)
+#             POLICE COMPLAINT REPORT
 # ==================================================
-print("\n📘 Report language choose kare:")
-print("👉 Hindi ke liye: hi")
-print("👉 English ke liye: en")
+# Audio Evidence ID : {AUDIO_EVIDENCE_ID}
+# Input Language    : {input_language}
+# AI Confirmation  : Used
+# Status           : User‑Edited & Confirmed
 
-choice = input("Your choice (hi/en): ").strip().lower()
+# --------------------------------------------------
+# 1. REPORT SUMMARY
+# --------------------------------------------------
+# {summary}
 
-# ==================================================
-# 7️⃣ REPORT SUMMARY (UNCHANGED)
-# ==================================================
-if choice == "hi":
-    summary = (
-        f"यह रिपोर्ट {fields['DATE']} को {fields['TIME']} बजे दर्ज की गई है। "
-        f"शिकायतकर्ता {fields['NAME']} द्वारा "
-        f"{fields['INCIDENT_PLACE']} क्षेत्र में "
-        f"{fields['COMPLAINT_TYPE']} से संबंधित शिकायत दर्ज की गई है।"
-    )
-else:
-    summary = (
-        f"This report was generated on {fields['DATE']} at {fields['TIME']}. "
-        f"The complainant {fields['NAME']} reported a "
-        f"{fields['COMPLAINT_TYPE']} near {fields['INCIDENT_PLACE']}."
-    )
+# --------------------------------------------------
+# 2. COMPLAINT DESCRIPTION (ENGLISH)
+# --------------------------------------------------
+# {english_text}
 
-# ==================================================
-# 8️⃣ FINAL REPORT (WITH AUDIO EVIDENCE ID)
-# ==================================================
-if choice == "hi":
-    report = f"""
-==================================================
-            पुलिस शिकायत रिपोर्ट
-==================================================
-ऑडियो साक्ष्य आईडी : {AUDIO_EVIDENCE_ID}
-इनपुट भाषा        : {input_language}
-AI पुष्टि ऑडियो     : उपयोग किया गया
-स्थिति            : User‑Edited & Confirmed
+# --------------------------------------------------
+# Generated By : Voice-Based FIR System
+# --------------------------------------------------
+# """
 
---------------------------------------------------
-1. रिपोर्ट सारांश
---------------------------------------------------
-{summary}
+# with open(REPORT_FILE, "w", encoding="utf-8") as f:
+#     f.write(report)
 
---------------------------------------------------
-2. शिकायत विवरण (हिंदी)
---------------------------------------------------
-{hindi_text}
-
---------------------------------------------------
-तैयार किया गया : Voice-Based FIR System
---------------------------------------------------
-"""
-else:
-    report = f"""
-==================================================
-            POLICE COMPLAINT REPORT
-==================================================
-Audio Evidence ID : {AUDIO_EVIDENCE_ID}
-Input Language    : {input_language}
-AI Confirmation  : Used
-Status           : User‑Edited & Confirmed
-
---------------------------------------------------
-1. REPORT SUMMARY
---------------------------------------------------
-{summary}
-
---------------------------------------------------
-2. COMPLAINT DESCRIPTION (ENGLISH)
---------------------------------------------------
-{english_text}
-
---------------------------------------------------
-Generated By : Voice-Based FIR System
---------------------------------------------------
-"""
-
-with open(REPORT_FILE, "w", encoding="utf-8") as f:
-    f.write(report)
-
-print("\n📄 FINAL REPORT GENERATED → final_report.txt")
-print("🎉 DONE — REPORT EDIT + AUDIO EVIDENCE ID ADDED")
+# print("\n📄 FINAL REPORT GENERATED → final_report.txt")
+# print("🎉 DONE — REPORT EDIT + AUDIO EVIDENCE ID ADDED")
