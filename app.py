@@ -1,105 +1,109 @@
 import streamlit as st
-import subprocess
 import os
+from voice_video.transcribe import transcribe_pipline, confirmed_audio_to_text
+from run_pipeline import run_pipeline, generate_fir_report
+
+
 
 st.set_page_config(page_title="AI FIR System", layout="wide")
-st.title("🎙️ AI Voice & Video FIR System")
+st.title("🎙️ AI Voice-Based FIR System (Web Mode)")
 
-# ===============================
-# STEP 1: VIDEO UPLOAD
-# ===============================
-st.header("1️⃣ Upload Video (with Audio)")
+# ---------------------------
+# Upload Section
+# ---------------------------
+st.header("Step 1️⃣ Upload FIR Audio")
 
-video_file = st.file_uploader(
-    "Upload recorded video (camera + mic)",
-    type=["mp4", "webm"]
+uploaded_audio = st.file_uploader(
+    "Upload FIR Audio File",
+    type=["wav", "mp3"]
 )
 
-if video_file:
-    with open("temp/input_video.mp4", "wb") as f:
-        f.write(video_file.read())
+if uploaded_audio:
+    with open("voice.wav", "wb") as f:
+        f.write(uploaded_audio.read())
 
-    st.video("temp/input_video.mp4")
-    st.success("Video uploaded successfully")
+    st.audio("voice.wav")
 
-# ===============================
-# STEP 2: EXTRACT AUDIO
-# ===============================
-st.header("2️⃣ Extract Audio from Video")
+# ---------------------------
+# Transcription
+# ---------------------------
+if uploaded_audio and st.button("▶️ Start Transcription"):
+    with st.spinner("Processing audio..."):
+        original_text, lang = transcribe_pipline("voice.wav")
+        texts = confirmed_audio_to_text("voice.wav")
 
-if st.button("🎧 Extract Audio"):
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-i", "temp/input_video.mp4",
-        "-q:a", "0",
-        "-map", "a",
-        "temp/voice.wav"
-    ])
-    st.success("Audio extracted")
-    st.audio("temp/voice.wav")
+    st.session_state["hindi"] = texts["hindi"]
+    st.session_state["english"] = texts["english"]
+    st.success("✅ Transcription completed")
 
-# ===============================
-# STEP 3: AI CONFIRMATION VOICE
-# ===============================
-st.header("3️⃣ AI Confirmation Voice")
+# ---------------------------
+# Language Edit
+# ---------------------------
+if "hindi" in st.session_state:
+    st.header("Step 2️⃣ Edit FIR")
 
-if st.button("🔊 Generate AI Voice"):
-    subprocess.run(["python", "voice_video/transcribe.py"])
-    st.success("AI confirmation voice generated")
+    language = st.radio("Choose language", ["Hindi", "English"])
 
-if os.path.exists("ai_confirm.mp3"):
-    st.audio("ai_confirm.mp3")
+    text_map = {
+        "Hindi": st.session_state["hindi"],
+        "English": st.session_state["english"]
+    }
 
-# ===============================
-# STEP 4: REVIEW & EDIT TEXT
-# ===============================
-st.header("4️⃣ Review & Edit Text")
+    edited_text = st.text_area(
+        f"Edit {language} FIR",
+        value=text_map[language],
+        height=300
+    )
 
-if os.path.exists("hindi_text.txt"):
-    with open("hindi_text.txt", "r", encoding="utf-8") as f:
-        edited = st.text_area(
-            "Hindi Complaint (Editable)",
-            f.read(),
-            height=250
-        )
+    if st.button("💾 Save Edited FIR"):
+        filename = "hindi_text.txt" if language == "Hindi" else "english_text.txt"
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(edited_text)
+        st.session_state["final_text"] = edited_text
+        st.session_state["selected_language"] = "hi" if language == "Hindi" else "en"
 
-    if st.button("💾 Save Edited Text"):
-        with open("hindi_text.txt", "w", encoding="utf-8") as f:
-            f.write(edited)
-        st.success("Text updated")
+        st.success("✅ FIR saved successfully")
 
-# ===============================
-# STEP 5: FINAL REPORT OPTIONS
-# ===============================
-st.header("5️⃣ Final Report Options")
+# ---------------------------
+# field extraction and report generation
+# ---------------------------
+# st.header("Step 3️⃣ Generate Final Report")
+if st.button("📄 Generate Report"):
+    result = run_pipeline(
+        audio_file="voice.wav",
+        final_text=st.session_state["final_text"],
+        language=st.session_state["selected_language"]
+    )
+    st.session_state["extracted_fields"] = result["extracted_fields"]
+    st.subheader("📌 Extracted Fields")
+    st.json(result["extracted_fields"])
 
-format_choice = st.radio(
-    "Choose final report format",
-    ["TXT", "HTML (Save as PDF)"]
+
+st.subheader("📘 Choose Report Language")
+report_language = st.radio(
+    "Report Language",
+    options=["hi", "en"],
+    format_func=lambda x: "Hindi" if x == "hi" else "English"
 )
 
-if st.button("📄 Generate Final Report"):
-    subprocess.run(["python", "run_pipeline.py"])
-    st.success("Final report generated")
+if st.button("📄 Generate Final FIR Report"):
+    final_report = generate_fir_report(
+        fields=st.session_state["extracted_fields"],
+        hindi_text=st.session_state["hindi"],
+        english_text=st.session_state["english"],
+        report_language=report_language,
+        # audio_evidence_id=st.session_state["audio_evidence_id"],
+        input_language=st.session_state["input_language"]
+    )
 
-# ===============================
-# STEP 6: DOWNLOAD
-# ===============================
-st.header("6️⃣ Download")
+    st.subheader("📄 Final Report Preview")
+    st.text(final_report)
 
-if format_choice == "TXT" and os.path.exists("final_report.txt"):
-    with open("final_report.txt", "r", encoding="utf-8") as f:
-        st.download_button(
-            "⬇️ Download TXT",
-            f.read(),
-            "FIR_Report.txt"
-        )
+    st.download_button(
+        "⬇️ Download Report",
+        final_report,
+        file_name="final_report.txt"
+    )
 
-if format_choice.startswith("HTML") and os.path.exists("final_report.html"):
-    with open("final_report.html", "r", encoding="utf-8") as f:
-        st.download_button(
-            "⬇️ Download HTML (Print → PDF)",
-            f.read(),
-            "FIR_Report.html",
-            mime="text/html"
-        )
+st.markdown("---")
+st.markdown("Developed by AI FIR System Team")
