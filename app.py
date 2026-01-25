@@ -3,7 +3,10 @@ import os
 from voice_video.transcribe import transcribe_pipline, confirmed_audio_to_text
 from run_pipeline import run_pipeline, generate_fir_report
 
-
+from voice_video.record import record_audio_video
+# Get the directory of this script
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+AUDIO_FILE = os.path.join(SCRIPT_DIR, "voice.wav")
 
 st.set_page_config(page_title="AI FIR System", layout="wide")
 st.title("🎙️ AI Voice-Based FIR System (Web Mode)")
@@ -11,26 +14,29 @@ st.title("🎙️ AI Voice-Based FIR System (Web Mode)")
 # ---------------------------
 # Upload Section
 # ---------------------------
-st.header("Step 1️⃣ Upload FIR Audio")
+st.header("Step 1️⃣ Record your voice and video")
 
-uploaded_audio = st.file_uploader(
-    "Upload FIR Audio File",
-    type=["wav", "mp3"]
-)
+if st.button("🎥 Start Recording Audio & Video"):
+    audio_file, video_file = record_audio_video()
+    st.session_state["audio_file"] = audio_file
+    st.session_state["video_file"] = video_file
+    st.success("✅ Recording completed")    
 
-if uploaded_audio:
-    with open("voice.wav", "wb") as f:
-        f.write(uploaded_audio.read())
+# if uploaded_audio:
+#     with open(AUDIO_FILE, "wb") as f:
+#         f.write(uploaded_audio.read())
 
-    st.audio("voice.wav")
+#     st.audio(AUDIO_FILE)
 
-# ---------------------------
-# Transcription
-# ---------------------------
-if uploaded_audio and st.button("▶️ Start Transcription"):
-    with st.spinner("Processing audio..."):
-        original_text, lang = transcribe_pipline("voice.wav")
-        texts = confirmed_audio_to_text("voice.wav")
+
+if st.session_state["audio_file"] and st.button("▶️ Start Transcription"):
+    # Verify audio file exists and has content
+    if not os.path.exists(st.session_state["audio_file"]) or os.path.getsize(st.session_state["audio_file"]) == 0:
+        st.error("❌ Error: Audio file is empty or invalid. Please upload a valid audio file.")
+    else:
+        with st.spinner("Processing audio..."):
+            original_text, lang = transcribe_pipline(st.session_state["audio_file"])
+            texts = confirmed_audio_to_text(st.session_state["audio_file"])
 
     st.session_state["hindi"] = texts["hindi"]
     st.session_state["english"] = texts["english"]
@@ -79,21 +85,15 @@ if st.button("📄 Generate Report"):
     st.json(result["extracted_fields"])
 
 
-st.subheader("📘 Choose Report Language")
-report_language = st.radio(
-    "Report Language",
-    options=["hi", "en"],
-    format_func=lambda x: "Hindi" if x == "hi" else "English"
-)
-
 if st.button("📄 Generate Final FIR Report"):
     final_report = generate_fir_report(
         fields=st.session_state["extracted_fields"],
-        hindi_text=st.session_state["hindi"],
-        english_text=st.session_state["english"],
-        report_language=report_language,
+        final_text=st.session_state["final_text"],
+        # hindi_text=st.session_state["hindi"],
+        # english_text=st.session_state["english"],
+        # report_language=report_language,
         # audio_evidence_id=st.session_state["audio_evidence_id"],
-        input_language=st.session_state["input_language"]
+        input_language=st.session_state["selected_language"]
     )
 
     st.subheader("📄 Final Report Preview")

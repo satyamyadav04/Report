@@ -3,7 +3,7 @@ from report_generator import (
     generate_report_summary,
     generate_final_report
 )
-
+from voice_video.transcribe import generate_audio_evidence_id
 def run_pipeline(audio_file, final_text, language):
     """
     Final AI pipeline
@@ -18,24 +18,19 @@ def run_pipeline(audio_file, final_text, language):
         "extracted_fields": fields
     }
     
-
 def generate_fir_report(
     fields,
-    hindi_text,
-    english_text,
-    report_language,
-    # audio_evidence_id,
+    final_text,
     input_language
+    # report_language,
+    # audio_evidence_id,
 ):
-    summary = generate_report_summary(fields, report_language)
+    summary = generate_report_summary(fields, input_language)
     report = generate_final_report(
         fields=fields,
         summary=summary,
-        report_language=report_language,
-        hindi_text=hindi_text,
-        english_text=english_text,
-        # audio_evidence_id=audio_evidence_id,
-        input_language=input_language
+        final_text=final_text,
+        input_language=input_language,
+        audio_evidence_id=generate_audio_evidence_id()
     )
-
     return report
