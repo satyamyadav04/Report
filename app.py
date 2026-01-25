@@ -3,6 +3,7 @@ import os
 from voice_video.transcribe import transcribe_pipline, confirmed_audio_to_text
 from run_pipeline import run_pipeline, generate_fir_report
 
+from voice_video.record import record_audio_video
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 AUDIO_FILE = os.path.join(SCRIPT_DIR, "voice.wav")
@@ -13,24 +14,29 @@ st.title("🎙️ AI Voice-Based FIR System (Web Mode)")
 # ---------------------------
 # Upload Section
 # ---------------------------
-st.header("Step 1️⃣ Upload FIR Audio")
+st.header("Step 1️⃣ Record your voice and video")
 
-uploaded_audio = st.file_uploader(
-    "Upload FIR Audio File",
-    type=["wav", "mp3"]
-)
+if st.button("🎥 Start Recording Audio & Video"):
+    audio_file, video_file = record_audio_video()
+    st.session_state["audio_file"] = audio_file
+    st.session_state["video_file"] = video_file
+    st.success("✅ Recording completed")    
 
-if uploaded_audio:
-    with open(AUDIO_FILE, "wb") as f:
-        f.write(uploaded_audio.read())
+# if uploaded_audio:
+#     with open(AUDIO_FILE, "wb") as f:
+#         f.write(uploaded_audio.read())
 
-    st.audio(AUDIO_FILE)
+#     st.audio(AUDIO_FILE)
 
 
-if uploaded_audio and st.button("▶️ Start Transcription"):
-    with st.spinner("Processing audio..."):
-        original_text, lang = transcribe_pipline(AUDIO_FILE)
-        texts = confirmed_audio_to_text(AUDIO_FILE)
+if st.session_state["audio_file"] and st.button("▶️ Start Transcription"):
+    # Verify audio file exists and has content
+    if not os.path.exists(st.session_state["audio_file"]) or os.path.getsize(st.session_state["audio_file"]) == 0:
+        st.error("❌ Error: Audio file is empty or invalid. Please upload a valid audio file.")
+    else:
+        with st.spinner("Processing audio..."):
+            original_text, lang = transcribe_pipline(st.session_state["audio_file"])
+            texts = confirmed_audio_to_text(st.session_state["audio_file"])
 
     st.session_state["hindi"] = texts["hindi"]
     st.session_state["english"] = texts["english"]
