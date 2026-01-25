@@ -4,12 +4,11 @@ from datetime import datetime
 import whisper
 from gtts import gTTS
 from playsound import playsound
-from model import get_model
+import streamlit as st
+from model import load_model
 
 
-# AUDIO_FILE = "voice.wav"            # user input voice
 AI_VOICE_FILE = "ai_confirm.mp3"    # AI confirmation audio
-# REPORT_FILE = "final_report.txt"
 
 def generate_audio_evidence_id():
     now = datetime.now()
@@ -17,8 +16,11 @@ def generate_audio_evidence_id():
 
 AUDIO_EVIDENCE_ID = generate_audio_evidence_id()
 
-model = get_model()
+@st.cache_resource
+def get_model(model_name="small"):
+    return load_model(model_name)
 
+model = load_model()
 def transcribe_pipline(AUDIO_FILE):
     result = model.transcribe(
         AUDIO_FILE,
@@ -29,11 +31,11 @@ def transcribe_pipline(AUDIO_FILE):
     original_text = result["text"].strip()
     return original_text, input_language
 
-def generate_ai_confirmation(text, lang):
-    tts_lang = lang if lang in ["hi", "en"] else "hi"
-    tts = gTTS(text=text, lang=tts_lang)
-    tts.save(AI_VOICE_FILE)
-    return AI_VOICE_FILE
+# def generate_ai_confirmation(text, lang):
+#     tts_lang = lang if lang in ["hi", "en"] else "hi"
+#     tts = gTTS(text=text, lang=tts_lang)
+#     tts.save(AI_VOICE_FILE)
+#     return AI_VOICE_FILE
 
 def confirmed_audio_to_text(AUDIO_FILE):
     hi = model.transcribe(AUDIO_FILE, language="hi", fp16=False)["text"]
