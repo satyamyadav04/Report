@@ -1,9 +1,12 @@
-import whisper
+from faster_whisper import WhisperModel
 import streamlit as st
 
 @st.cache_resource
-def load_model(model_name="small"):
-    print("🔄 Loading Whisper model...")
-    model = whisper.load_model(model_name)
-    print("✅ Model loaded (local cache)")
-    return model
+def load_fw_model():
+    return WhisperModel(
+        "small",
+        device="cpu",
+        compute_type="int8" 
+    )
+
+fw_model = load_fw_model()

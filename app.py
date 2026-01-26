@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from voice_video.transcribe import transcribe_pipline, confirmed_audio_to_text
+from voice_video.transcribe import transcribe_hi_en
 from run_pipeline import run_pipeline, generate_fir_report
 
 from voice_video.record import record_audio_video
@@ -22,29 +22,34 @@ if st.button("🎥 Start Recording Audio & Video"):
     st.session_state["video_file"] = video_file
     st.success("✅ Recording completed")    
 
-# if uploaded_audio:
-#     with open(AUDIO_FILE, "wb") as f:
-#         f.write(uploaded_audio.read())
+st.session_state['audio_file'] = './voice.wav'  # For testing purposes
 
-#     st.audio(AUDIO_FILE)
+if st.session_state.get("audio_file") and st.button("▶️ Start Transcription"):
 
+    audio_path = st.session_state["audio_file"]
 
-if st.session_state["audio_file"] and st.button("▶️ Start Transcription"):
-    # Verify audio file exists and has content
-    if not os.path.exists(st.session_state["audio_file"]) or os.path.getsize(st.session_state["audio_file"]) == 0:
+    # ✅ Validate audio
+    if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
         st.error("❌ Error: Audio file is empty or invalid. Please upload a valid audio file.")
     else:
-        with st.spinner("Processing audio..."):
-            original_text, lang = transcribe_pipline(st.session_state["audio_file"])
-            texts = confirmed_audio_to_text(st.session_state["audio_file"])
+        try:
+            with st.spinner("Processing audio..."):
+                texts = transcribe_hi_en(audio_path)   # 🔥 single call
 
-    st.session_state["hindi"] = texts["hindi"]
-    st.session_state["english"] = texts["english"]
-    st.success("✅ Transcription completed")
+            # ✅ Save to session state
+            st.session_state["hindi"] = texts["hindi"]
+            st.session_state["english"] = texts["english"]
+
+            st.success("✅ Transcription completed")
+
+        except Exception as e:
+            st.error(f"❌ Transcription failed: {e}")
+
 
 # ---------------------------
 # Language Edit
 # ---------------------------
+
 if "hindi" in st.session_state:
     st.header("Step 2️⃣ Edit FIR")
 
@@ -73,7 +78,7 @@ if "hindi" in st.session_state:
 # ---------------------------
 # field extraction and report generation
 # ---------------------------
-# st.header("Step 3️⃣ Generate Final Report")
+
 if st.button("📄 Generate Report"):
     result = run_pipeline(
         audio_file="voice.wav",
@@ -89,10 +94,6 @@ if st.button("📄 Generate Final FIR Report"):
     final_report = generate_fir_report(
         fields=st.session_state["extracted_fields"],
         final_text=st.session_state["final_text"],
-        # hindi_text=st.session_state["hindi"],
-        # english_text=st.session_state["english"],
-        # report_language=report_language,
-        # audio_evidence_id=st.session_state["audio_evidence_id"],
         input_language=st.session_state["selected_language"]
     )
 
