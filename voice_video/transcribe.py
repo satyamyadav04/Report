@@ -2,7 +2,6 @@ import os
 import re
 from datetime import datetime
 import whisper
-from gtts import gTTS
 from playsound import playsound
 import streamlit as st
 from model import load_fw_model
