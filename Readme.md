@@ -1,4 +1,4 @@
-# 🎙️ Voice-Based FIR Generation System (Hindi & English)
+# Voice-Based FIR Generation System (Hindi & English)
 
 A **voice-driven police complaint (FIR) generation system** that converts user-recorded audio into **structured, editable, and legally formatted FIR reports** in **Hindi or English**, using **AI-based speech-to-text** and rule-based information extraction.
 
